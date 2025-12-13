@@ -1,4 +1,4 @@
-package com.sal.sal;
+package com.sal;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

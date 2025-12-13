@@ -1,4 +1,4 @@
-package com.sal.sal.lead;
+package com.sal.linkedin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
