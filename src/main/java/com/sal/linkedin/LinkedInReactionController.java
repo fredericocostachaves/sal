@@ -1,6 +1,8 @@
 package com.sal.linkedin;
 
 import com.sal.linkedin.dto.LinkedInReactionRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/linkedin/likes")
+@Tag(name = "LinkedIn Reactions", description = "Endpoints para interagir com posts do LinkedIn")
 public class LinkedInReactionController {
 
     private final LinkedInApiClient apiClient;
@@ -31,6 +34,7 @@ public class LinkedInReactionController {
     @Value("${linkedin.actor-urn:}")
     private String defaultActorUrn;
 
+    @Operation(summary = "Adiciona uma reação a um post", description = "Cria uma reação (LIKE por padrão) em um post específico do LinkedIn.")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> react(
             @RequestHeader(name = "X-LinkedIn-Access-Token", required = false) String accessTokenHeader,

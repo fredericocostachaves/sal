@@ -2,6 +2,8 @@ package com.sal.linkedin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/leads")
+@Tag(name = "Leads", description = "Endpoints para captura de leads")
 public class LinkedInLeadController {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -33,6 +36,7 @@ public class LinkedInLeadController {
     @Value("${linkedin.app-secret:}")
     private String linkedInAppSecret;
 
+    @Operation(summary = "Captura lead do LinkedIn via Webhook", description = "Recebe eventos de leads do LinkedIn e valida a assinatura se configurada.")
     @PostMapping(path = "/linkedin", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> captureLead(
             @RequestHeader(name = "X-LI-Signature", required = false) String signature,
