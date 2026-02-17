@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Map;
 
+/*
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -120,3 +121,4 @@ public class LinkedInLeadController {
         return null;
     }
 }
+*/

@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/*
 @WebMvcTest(controllers = LinkedInReactionController.class)
 @TestPropertySource(properties = {
         "linkedin.actor-urn=urn:li:person:TEST_ACTOR"
@@ -85,3 +86,4 @@ class LinkedInReactionControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 }
+*/

@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.util.UUID;
 
+/*
 @Slf4j
 @RestController
 @RequestMapping("/api/linkedin/auth")
@@ -51,3 +52,4 @@ public class LinkedInAuthController {
                 .build();
     }
 }
+*/

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -93,3 +94,4 @@ public class LinkedInReactionController {
         return StringUtils.hasText(s) ? s : def;
     }
 }
+*/
