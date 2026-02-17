@@ -111,6 +111,83 @@ public class UnipileApiClient {
         }
     }
 
+    public void addPostReaction(String accountId, String postId, String reaction) {
+        String url = baseUrl + "/api/v1/posts/" + postId + "/reactions";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-KEY", apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                .queryParam("account_id", accountId);
+
+        Map<String, String> body = new HashMap<>();
+        body.put("reaction", reaction);
+
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            log.debug("Calling Unipile Add Post Reaction (POST): {}", builder.build().toUri());
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    builder.build().toUri(),
+                    HttpMethod.POST,
+                    entity,
+                    Map.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Unipile API returned status: {}", response.getStatusCode());
+                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+            }
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendConnectionRequest(String accountId, String identifier, String message) {
+        String url = baseUrl + "/api/v1/users";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-KEY", apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                .queryParam("account_id", accountId);
+
+        Map<String, String> body = new HashMap<>();
+        body.put("identifier", identifier);
+        if (StringUtils.hasText(message)) {
+            body.put("message", message);
+        }
+
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            log.debug("Calling Unipile Add User (POST): {}", builder.build().toUri());
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    builder.build().toUri(),
+                    HttpMethod.POST,
+                    entity,
+                    Map.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Unipile API returned status: {}", response.getStatusCode());
+                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+            }
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        }
+    }
+
     private String buildLinkedInUrl(UnipileLinkedInSearchRequest request) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString("https://www.linkedin.com/search/results/people/");
         
