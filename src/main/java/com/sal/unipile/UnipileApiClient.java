@@ -1,5 +1,6 @@
 package com.sal.unipile;
 
+import com.sal.unipile.dto.UnipileEmailRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchResponse;
 import lombok.RequiredArgsConstructor;
@@ -168,6 +169,78 @@ public class UnipileApiClient {
 
         try {
             log.debug("Calling Unipile Add User (POST): {}", builder.build().toUri());
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    builder.build().toUri(),
+                    HttpMethod.POST,
+                    entity,
+                    Map.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Unipile API returned status: {}", response.getStatusCode());
+                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+            }
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        }
+    }
+
+    public void startNewChat(String accountId, List<String> attendeesIds, String text) {
+        String url = baseUrl + "/api/v1/chats";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-KEY", apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                .queryParam("account_id", accountId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("attendees_ids", attendeesIds);
+        body.put("text", text);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            log.debug("Calling Unipile Start New Chat (POST): {}", builder.build().toUri());
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    builder.build().toUri(),
+                    HttpMethod.POST,
+                    entity,
+                    Map.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Unipile API returned status: {}", response.getStatusCode());
+                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+            }
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendEmail(String accountId, UnipileEmailRequest request) {
+        String url = baseUrl + "/api/v1/emails";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-KEY", apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                .queryParam("account_id", accountId);
+
+        HttpEntity<UnipileEmailRequest> entity = new HttpEntity<>(request, headers);
+
+        try {
+            log.debug("Calling Unipile Send Email (POST): {}", builder.build().toUri());
             ResponseEntity<Map> response = restTemplate.exchange(
                     builder.build().toUri(),
                     HttpMethod.POST,
