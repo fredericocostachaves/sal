@@ -29,7 +29,7 @@ public class C6CheckoutClient {
     @Value("${c6.checkout.merchant-id:}")
     private String merchantId;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     // Simple in-memory token cache
     private volatile String accessToken;

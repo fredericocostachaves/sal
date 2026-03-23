@@ -18,4 +18,7 @@ public class HostedAuthRequest {
     private String expiresOn;
     private String notify_url;
     private String name; // internal user ID
+    private String success_redirect_url;
+    private String failure_redirect_url;
+    private String reconnect_account;
 }

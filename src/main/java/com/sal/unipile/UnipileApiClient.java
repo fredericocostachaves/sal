@@ -24,13 +24,16 @@ import java.util.HashMap;
 @RequiredArgsConstructor
 public class UnipileApiClient {
 
-    @Value("${unipile.api.base-url:https://api1.unipile.com:1337}")
+    @Value("${unipile.api.base-url:https://api23.unipile.com:15305}")
     private String baseUrl;
 
     @Value("${unipile.api.key:}")
     private String apiKey;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    @Value("${unipile.api.auth-domain:}")
+    private String authDomain;
+
+    private final RestTemplate restTemplate;
 
     public UnipileLinkedInSearchResponse searchLinkedIn(UnipileLinkedInSearchRequest request) {
         UnipileLinkedInSearchResponse combinedResponse = null;
@@ -72,8 +75,9 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/linkedin/search";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", request.getAccount_id())
@@ -118,8 +122,9 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/posts/" + postId + "/reactions";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -155,8 +160,9 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/users";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -195,8 +201,9 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/chats";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -233,8 +240,9 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/emails";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -267,8 +275,9 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/hosted/accounts/link";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
+        headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         HttpEntity<HostedAuthRequest> entity = new HttpEntity<>(request, headers);
 
@@ -282,7 +291,12 @@ public class UnipileApiClient {
             );
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody();
+                HostedAuthResponse authResponse = response.getBody();
+                if (authResponse != null && StringUtils.hasText(authDomain) && authResponse.getUrl() != null) {
+                    String rewrittenUrl = authResponse.getUrl().replace("account.unipile.com", authDomain);
+                    authResponse.setUrl(rewrittenUrl);
+                }
+                return authResponse;
             } else {
                 log.error("Unipile API returned status: {}", response.getStatusCode());
                 throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
