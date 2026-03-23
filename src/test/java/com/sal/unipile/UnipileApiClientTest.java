@@ -43,7 +43,9 @@ class UnipileApiClientTest {
                 .url("https://account.unipile.com/some-token")
                 .build();
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(HostedAuthResponse.class)))
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), argThat(entity -> 
+                entity.getHeaders().getFirst("X-API-KEY").equals("test-api-key")
+        ), eq(HostedAuthResponse.class)))
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         HostedAuthResponse result = unipileApiClient.getHostedAuthLink(request);
@@ -61,7 +63,9 @@ class UnipileApiClientTest {
                 .url("https://account.unipile.com/some-token")
                 .build();
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(HostedAuthResponse.class)))
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), argThat(entity -> 
+                entity.getHeaders().getFirst("X-API-KEY").equals("test-api-key")
+        ), eq(HostedAuthResponse.class)))
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         HostedAuthResponse result = unipileApiClient.getHostedAuthLink(request);

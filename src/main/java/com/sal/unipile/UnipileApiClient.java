@@ -75,7 +75,7 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/linkedin/search";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(apiKey);
+        headers.set("X-API-KEY", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
@@ -122,7 +122,7 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/posts/" + postId + "/reactions";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(apiKey);
+        headers.set("X-API-KEY", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
@@ -160,7 +160,7 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/users";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(apiKey);
+        headers.set("X-API-KEY", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
@@ -201,7 +201,7 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/chats";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(apiKey);
+        headers.set("X-API-KEY", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
@@ -240,7 +240,7 @@ public class UnipileApiClient {
         String url = baseUrl + "/api/v1/emails";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(apiKey);
+        headers.set("X-API-KEY", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
@@ -274,8 +274,18 @@ public class UnipileApiClient {
     public HostedAuthResponse getHostedAuthLink(HostedAuthRequest request) {
         String url = baseUrl + "/api/v1/hosted/accounts/link";
 
+        if (!StringUtils.hasText(request.getApi_url())) {
+            request.setApi_url(baseUrl);
+        }
+        if (!StringUtils.hasText(request.getType())) {
+            request.setType("create");
+        }
+        if (request.getProviders() == null) {
+            request.setProviders("*");
+        }
+
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(apiKey);
+        headers.set("X-API-KEY", apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
