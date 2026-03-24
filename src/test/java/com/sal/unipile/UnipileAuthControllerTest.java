@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sal.unipile.dto.HostedAuthNotification;
 import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
+import com.sal.unipile.dto.UnipileAccountResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,5 +75,19 @@ class UnipileAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(notification)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve listar contas com sucesso")
+    void listAccounts_ShouldReturnAccounts() throws Exception {
+        UnipileAccountResponse response = new UnipileAccountResponse();
+        response.setObject("AccountList");
+
+        when(unipileApiClient.listAccounts()).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/hosted/accounts")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.object").value("AccountList"));
     }
 }

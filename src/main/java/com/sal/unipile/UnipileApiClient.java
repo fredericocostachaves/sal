@@ -2,6 +2,7 @@ package com.sal.unipile;
 
 import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
+import com.sal.unipile.dto.UnipileAccountResponse;
 import com.sal.unipile.dto.UnipileEmailRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchResponse;
@@ -307,6 +308,39 @@ public class UnipileApiClient {
                     authResponse.setUrl(rewrittenUrl);
                 }
                 return authResponse;
+            } else {
+                log.error("Unipile API returned status: {}", response.getStatusCode());
+                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+            }
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        }
+    }
+
+    public UnipileAccountResponse listAccounts() {
+        String url = baseUrl + "/api/v1/accounts";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-KEY", apiKey);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            log.debug("Calling Unipile List Accounts (GET): {}", url);
+            ResponseEntity<UnipileAccountResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    UnipileAccountResponse.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return response.getBody();
             } else {
                 log.error("Unipile API returned status: {}", response.getStatusCode());
                 throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
