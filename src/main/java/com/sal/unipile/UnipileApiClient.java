@@ -36,6 +36,34 @@ public class UnipileApiClient {
 
     private final RestTemplate restTemplate;
 
+    private HttpHeaders buildHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-KEY", apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        return headers;
+    }
+
+    private <T> T executeRequest(String uri, HttpMethod method, HttpEntity<?> entity, Class<T> responseType, String operation) {
+        try {
+            log.debug("Calling Unipile {}: {}", operation, uri);
+            ResponseEntity<T> response = restTemplate.exchange(uri, method, entity, responseType);
+            
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return response.getBody();
+            } else {
+                log.error("Unipile API returned status: {}", response.getStatusCode());
+                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+            }
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+        } catch (Exception e) {
+            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        }
+    }
+
     public UnipileLinkedInSearchResponse searchLinkedIn(UnipileLinkedInSearchRequest request) {
         UnipileLinkedInSearchResponse combinedResponse = null;
         List<com.sal.unipile.dto.UnipileLinkedInSearchResult> allItems = new ArrayList<>();
@@ -75,11 +103,6 @@ public class UnipileApiClient {
     private UnipileLinkedInSearchResponse searchLinkedInPage(UnipileLinkedInSearchRequest request, String cursor) {
         String url = baseUrl + "/api/v1/linkedin/search";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", request.getAccount_id())
                 .queryParam("limit", 50);
@@ -93,39 +116,13 @@ public class UnipileApiClient {
         Map<String, String> body = new HashMap<>();
         body.put("url", linkedinUrl);
         
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, buildHeaders());
 
-        try {
-            log.debug("Calling Unipile LinkedIn Search page (POST): {}", builder.build().toUri());
-            ResponseEntity<UnipileLinkedInSearchResponse> response = restTemplate.exchange(
-                    builder.build().toUri(),
-                    HttpMethod.POST,
-                    entity,
-                    UnipileLinkedInSearchResponse.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody();
-            } else {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
-        }
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, UnipileLinkedInSearchResponse.class, "LinkedIn Search page");
     }
 
     public void addPostReaction(String accountId, String postId, String reaction) {
         String url = baseUrl + "/api/v1/posts/" + postId + "/reactions";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -133,37 +130,13 @@ public class UnipileApiClient {
         Map<String, String> body = new HashMap<>();
         body.put("reaction", reaction);
 
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, buildHeaders());
 
-        try {
-            log.debug("Calling Unipile Add Post Reaction (POST): {}", builder.build().toUri());
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    builder.build().toUri(),
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
-        }
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Add Post Reaction");
     }
 
     public void sendConnectionRequest(String accountId, String identifier, String message) {
         String url = baseUrl + "/api/v1/users";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -174,37 +147,13 @@ public class UnipileApiClient {
             body.put("message", message);
         }
 
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, buildHeaders());
 
-        try {
-            log.debug("Calling Unipile Add User (POST): {}", builder.build().toUri());
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    builder.build().toUri(),
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
-        }
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Add User");
     }
 
     public void startNewChat(String accountId, List<String> attendeesIds, String text) {
         String url = baseUrl + "/api/v1/chats";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -213,63 +162,20 @@ public class UnipileApiClient {
         body.put("attendees_ids", attendeesIds);
         body.put("text", text);
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, buildHeaders());
 
-        try {
-            log.debug("Calling Unipile Start New Chat (POST): {}", builder.build().toUri());
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    builder.build().toUri(),
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
-        }
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Start New Chat");
     }
 
     public void sendEmail(String accountId, UnipileEmailRequest request) {
         String url = baseUrl + "/api/v1/emails";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
 
-        HttpEntity<UnipileEmailRequest> entity = new HttpEntity<>(request, headers);
+        HttpEntity<UnipileEmailRequest> entity = new HttpEntity<>(request, buildHeaders());
 
-        try {
-            log.debug("Calling Unipile Send Email (POST): {}", builder.build().toUri());
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    builder.build().toUri(),
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
-        }
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Send Email");
     }
 
     public HostedAuthResponse getHostedAuthLink(HostedAuthRequest request) {
@@ -285,40 +191,16 @@ public class UnipileApiClient {
             request.setProviders("*");
         }
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-        HttpEntity<HostedAuthRequest> entity = new HttpEntity<>(request, headers);
-
-        try {
-            log.debug("Calling Unipile Hosted Auth Link (POST): {}", url);
-            ResponseEntity<HostedAuthResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    entity,
-                    HostedAuthResponse.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                HostedAuthResponse authResponse = response.getBody();
-                if (authResponse != null && StringUtils.hasText(authDomain) && authResponse.getUrl() != null) {
-                    String rewrittenUrl = authResponse.getUrl().replace("account.unipile.com", authDomain);
-                    authResponse.setUrl(rewrittenUrl);
-                }
-                return authResponse;
-            } else {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
+        HttpEntity<HostedAuthRequest> entity = new HttpEntity<>(request, buildHeaders());
+        
+        HostedAuthResponse authResponse = executeRequest(url, HttpMethod.POST, entity, HostedAuthResponse.class, "Hosted Auth Link");
+        
+        if (authResponse != null && StringUtils.hasText(authDomain) && authResponse.getUrl() != null) {
+            String rewrittenUrl = authResponse.getUrl().replace("account.unipile.com", authDomain);
+            authResponse.setUrl(rewrittenUrl);
         }
+        
+        return authResponse;
     }
 
     public UnipileAccountResponse listAccounts() {
@@ -330,28 +212,7 @@ public class UnipileApiClient {
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        try {
-            log.debug("Calling Unipile List Accounts (GET): {}", url);
-            ResponseEntity<UnipileAccountResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    UnipileAccountResponse.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody();
-            } else {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
-            }
-        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
-        } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
-            throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
-        }
+        return executeRequest(url, HttpMethod.GET, entity, UnipileAccountResponse.class, "List Accounts");
     }
 
     private String buildLinkedInUrl(UnipileLinkedInSearchRequest request) {
