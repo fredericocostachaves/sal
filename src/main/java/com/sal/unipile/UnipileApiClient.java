@@ -3,9 +3,13 @@ package com.sal.unipile;
 import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
 import com.sal.unipile.dto.UnipileAccountResponse;
+import com.sal.unipile.dto.UnipileCreateAccountRequest;
+import com.sal.unipile.dto.UnipileCreateAccountResponse;
 import com.sal.unipile.dto.UnipileEmailRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchResponse;
+import com.sal.unipile.dto.UnipileReconnectAccountRequest;
+import com.sal.unipile.dto.UnipileReconnectAccountResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -213,6 +217,32 @@ public class UnipileApiClient {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         return executeRequest(url, HttpMethod.GET, entity, UnipileAccountResponse.class, "List Accounts");
+    }
+
+    public UnipileCreateAccountResponse createAccount(UnipileCreateAccountRequest request) {
+        String url = baseUrl + "/api/v1/accounts";
+        request.setProvider("LINKEDIN");
+        HttpEntity<UnipileCreateAccountRequest> entity = new HttpEntity<>(request, buildHeaders());
+
+        return executeRequest(url, HttpMethod.POST, entity, UnipileCreateAccountResponse.class, "Create Account");
+    }
+
+    public UnipileReconnectAccountResponse reconnectAccount(UnipileReconnectAccountRequest request) {
+        String url = baseUrl + "/api/v1/accounts/" + request.getAccountId() + "/reconnect";
+
+        if (!StringUtils.hasText(request.getType())) {
+            request.setType("reconnect");
+        }
+        if (request.getProviders() == null) {
+            request.setProviders("*");
+        }
+        if (!StringUtils.hasText(request.getApiUrl())) {
+            request.setApiUrl(baseUrl);
+        }
+
+        HttpEntity<UnipileReconnectAccountRequest> entity = new HttpEntity<>(request, buildHeaders());
+
+        return executeRequest(url, HttpMethod.POST, entity, UnipileReconnectAccountResponse.class, "Reconnect Account");
     }
 
     private String buildLinkedInUrl(UnipileLinkedInSearchRequest request) {

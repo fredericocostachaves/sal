@@ -4,6 +4,10 @@ import com.sal.unipile.dto.HostedAuthNotification;
 import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
 import com.sal.unipile.dto.UnipileAccountResponse;
+import com.sal.unipile.dto.UnipileCreateAccountRequest;
+import com.sal.unipile.dto.UnipileCreateAccountResponse;
+import com.sal.unipile.dto.UnipileReconnectAccountRequest;
+import com.sal.unipile.dto.UnipileReconnectAccountResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,5 +39,17 @@ public class UnipileAuthController {
     @GetMapping
     public UnipileAccountResponse listAccounts() {
         return unipileApiClient.listAccounts();
+    }
+
+    @PostMapping
+    public UnipileCreateAccountResponse createAccount(@RequestBody UnipileCreateAccountRequest request) {
+        log.info("Creating Unipile account for email: {}", request.getEmail());
+        return unipileApiClient.createAccount(request);
+    }
+
+    @PostMapping("/reconnect")
+    public UnipileReconnectAccountResponse reconnectAccount(@RequestBody UnipileReconnectAccountRequest request) {
+        log.info("Generating reconnect link for account: {}", request.getAccountId());
+        return unipileApiClient.reconnectAccount(request);
     }
 }
