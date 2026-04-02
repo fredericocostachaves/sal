@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UnipilePostController.class)
-@org.springframework.test.context.TestPropertySource(properties = "unipile.account-id=")
+@org.springframework.test.context.TestPropertySource
 class UnipilePostControllerTest {
 
     @Autowired
@@ -46,7 +46,7 @@ class UnipilePostControllerTest {
 
         doNothing().when(unipileApiClient).addPostReaction(eq(accountId), eq(postId), eq("LIKE"));
 
-        mockMvc.perform(post("/api/unipile/posts/{postId}/react", postId)
+        mockMvc.perform(post("/api/v1/unipile/posts/{postId}/react", postId)
                         .queryParam("account_id", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -62,7 +62,7 @@ class UnipilePostControllerTest {
         String postId = "urn:li:activity:12345";
         UnipilePostReactionRequest request = new UnipilePostReactionRequest("LIKE");
 
-        mockMvc.perform(post("/api/unipile/posts/{postId}/react", postId)
+        mockMvc.perform(post("/api/v1/unipile/posts/{postId}/react", postId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -81,7 +81,7 @@ class UnipilePostControllerTest {
 
         when(unipileApiClient.searchLinkedIn(any())).thenReturn(response);
 
-        mockMvc.perform(post("/api/unipile/posts/search-leads")
+        mockMvc.perform(post("/api/v1/unipile/posts/search-leads")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -112,7 +112,7 @@ class UnipilePostControllerTest {
 
         when(unipileApiClient.searchLinkedIn(any())).thenReturn(response);
 
-        mockMvc.perform(post("/api/unipile/posts/search-leads")
+        mockMvc.perform(post("/api/v1/unipile/posts/search-leads")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -127,7 +127,7 @@ class UnipilePostControllerTest {
     void searchLeads_ShouldReturnBadRequest_WhenNoAccountId() throws Exception {
         UnipileLinkedInSearchRequest request = new UnipileLinkedInSearchRequest();
 
-        mockMvc.perform(post("/api/unipile/posts/search-leads")
+        mockMvc.perform(post("/api/v1/unipile/posts/search-leads")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -141,7 +141,7 @@ class UnipilePostControllerTest {
 
         doNothing().when(unipileApiClient).sendConnectionRequest(eq(accountId), eq(request.getIdentifier()), eq(request.getMessage()));
 
-        mockMvc.perform(post("/api/unipile/posts/connect")
+        mockMvc.perform(post("/api/v1/unipile/posts/connect")
                         .queryParam("account_id", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -155,7 +155,7 @@ class UnipilePostControllerTest {
     void connect_ShouldReturnBadRequest_WhenNoIdentifier() throws Exception {
         UnipileConnectionRequest request = new UnipileConnectionRequest("", "Olá!");
 
-        mockMvc.perform(post("/api/unipile/posts/connect")
+        mockMvc.perform(post("/api/v1/unipile/posts/connect")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

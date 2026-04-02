@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UnipileChatController.class)
-@org.springframework.test.context.TestPropertySource(properties = "unipile.account-id=")
+@org.springframework.test.context.TestPropertySource
 class UnipileChatControllerTest {
 
     @Autowired
@@ -41,7 +41,7 @@ class UnipileChatControllerTest {
 
         doNothing().when(unipileApiClient).startNewChat(eq(accountId), eq(request.getAttendees_ids()), eq(request.getText()));
 
-        mockMvc.perform(post("/api/unipile/chats/start")
+        mockMvc.perform(post("/api/v1/unipile/chats/start")
                         .queryParam("account_id", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -57,7 +57,7 @@ class UnipileChatControllerTest {
         request.setAttendees_ids(List.of("user-123"));
         request.setText("Olá");
 
-        mockMvc.perform(post("/api/unipile/chats/start")
+        mockMvc.perform(post("/api/v1/unipile/chats/start")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -70,7 +70,7 @@ class UnipileChatControllerTest {
         UnipileChatRequest request = new UnipileChatRequest();
         request.setText("Olá");
 
-        mockMvc.perform(post("/api/unipile/chats/start")
+        mockMvc.perform(post("/api/v1/unipile/chats/start")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -84,7 +84,7 @@ class UnipileChatControllerTest {
         UnipileChatRequest request = new UnipileChatRequest();
         request.setAttendees_ids(List.of("user-123"));
 
-        mockMvc.perform(post("/api/unipile/chats/start")
+        mockMvc.perform(post("/api/v1/unipile/chats/start")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

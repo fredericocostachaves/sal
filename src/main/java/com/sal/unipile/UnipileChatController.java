@@ -17,7 +17,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/unipile/chats")
+@RequestMapping("/api/v1/unipile/chats")
 @Tag(name = "Unipile Chats", description = "Endpoints para interação com chats via Unipile")
 public class UnipileChatController {
 

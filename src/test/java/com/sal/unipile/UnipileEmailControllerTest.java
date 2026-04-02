@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UnipileEmailController.class)
-@org.springframework.test.context.TestPropertySource(properties = "unipile.account-id=")
+@org.springframework.test.context.TestPropertySource
 class UnipileEmailControllerTest {
 
     @Autowired
@@ -46,7 +46,7 @@ class UnipileEmailControllerTest {
 
         doNothing().when(unipileApiClient).sendEmail(eq(accountId), eq(request));
 
-        mockMvc.perform(post("/api/unipile/emails/send")
+        mockMvc.perform(post("/api/v1/unipile/emails/send")
                         .queryParam("account_id", accountId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -67,7 +67,7 @@ class UnipileEmailControllerTest {
                 .body("Test Body")
                 .build();
 
-        mockMvc.perform(post("/api/unipile/emails/send")
+        mockMvc.perform(post("/api/v1/unipile/emails/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -82,7 +82,7 @@ class UnipileEmailControllerTest {
                 .body("Test Body")
                 .build();
 
-        mockMvc.perform(post("/api/unipile/emails/send")
+        mockMvc.perform(post("/api/v1/unipile/emails/send")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -101,7 +101,7 @@ class UnipileEmailControllerTest {
                 .body("Test Body")
                 .build();
 
-        mockMvc.perform(post("/api/unipile/emails/send")
+        mockMvc.perform(post("/api/v1/unipile/emails/send")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -120,7 +120,7 @@ class UnipileEmailControllerTest {
                 .subject("Test Subject")
                 .build();
 
-        mockMvc.perform(post("/api/unipile/emails/send")
+        mockMvc.perform(post("/api/v1/unipile/emails/send")
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

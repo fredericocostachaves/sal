@@ -3,8 +3,6 @@ package com.sal.unipile;
 import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
 import com.sal.unipile.dto.UnipileAccountResponse;
-import com.sal.unipile.dto.UnipileCreateAccountRequest;
-import com.sal.unipile.dto.UnipileCreateAccountResponse;
 import com.sal.unipile.dto.UnipileEmailRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchRequest;
 import com.sal.unipile.dto.UnipileLinkedInSearchResponse;
@@ -17,12 +15,18 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Slf4j
 @Component
@@ -38,7 +42,12 @@ public class UnipileApiClient {
     @Value("${unipile.api.auth-domain:}")
     private String authDomain;
 
+    @Value("${unipile.api.ambiente:localhost}")
+    private String ambiente;
+
     private final RestTemplate restTemplate;
+
+    private static final DateTimeFormatter ISO_INSTANT_MS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
 
     private HttpHeaders buildHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -140,7 +149,7 @@ public class UnipileApiClient {
     }
 
     public void sendConnectionRequest(String accountId, String identifier, String message) {
-        String url = baseUrl + "/api/v1/users";
+        String url = baseUrl + "/api/v1/linkedin/connections";
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("account_id", accountId);
@@ -153,7 +162,7 @@ public class UnipileApiClient {
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, buildHeaders());
 
-        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Add User");
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "LinkedIn Connection Request");
     }
 
     public void startNewChat(String accountId, List<String> attendeesIds, String text) {
@@ -185,14 +194,26 @@ public class UnipileApiClient {
     public HostedAuthResponse getHostedAuthLink(HostedAuthRequest request) {
         String url = baseUrl + "/api/v1/hosted/accounts/link";
 
-        if (!StringUtils.hasText(request.getApi_url())) {
-            request.setApi_url(baseUrl);
+        if (request == null) {
+            request = new HostedAuthRequest();
         }
         if (!StringUtils.hasText(request.getType())) {
             request.setType("create");
         }
         if (request.getProviders() == null) {
-            request.setProviders("*");
+            request.setProviders(Collections.singletonList("LINKEDIN"));
+        }
+        if (!StringUtils.hasText(request.getApi_url())) {
+            request.setApi_url(url);
+        }
+        if (!StringUtils.hasText(request.getExpiresOn())) {
+            request.setExpiresOn(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
+        }
+        if (!StringUtils.hasText(request.getExpires_on())) {
+            request.setExpires_on(request.getExpiresOn());
+        }
+        if (!StringUtils.hasText(request.getSuccess_redirect_url())) {
+            request.setSuccess_redirect_url(resolveSuccessRedirectUrl());
         }
 
         HttpEntity<HostedAuthRequest> entity = new HttpEntity<>(request, buildHeaders());
@@ -210,25 +231,13 @@ public class UnipileApiClient {
     public UnipileAccountResponse listAccounts() {
         String url = baseUrl + "/api/v1/accounts";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-API-KEY", apiKey);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
 
         return executeRequest(url, HttpMethod.GET, entity, UnipileAccountResponse.class, "List Accounts");
     }
 
-    public UnipileCreateAccountResponse createAccount(UnipileCreateAccountRequest request) {
-        String url = baseUrl + "/api/v1/accounts";
-        request.setProvider("LINKEDIN");
-        HttpEntity<UnipileCreateAccountRequest> entity = new HttpEntity<>(request, buildHeaders());
-
-        return executeRequest(url, HttpMethod.POST, entity, UnipileCreateAccountResponse.class, "Create Account");
-    }
-
     public UnipileReconnectAccountResponse reconnectAccount(UnipileReconnectAccountRequest request) {
-        String url = baseUrl + "/api/v1/accounts/" + request.getAccountId() + "/reconnect";
+        String url = baseUrl + "/api/v1/accounts/" + request.getAccount_id() + "/reconnect";
 
         if (!StringUtils.hasText(request.getType())) {
             request.setType("reconnect");
@@ -236,13 +245,32 @@ public class UnipileApiClient {
         if (request.getProviders() == null) {
             request.setProviders("*");
         }
-        if (!StringUtils.hasText(request.getApiUrl())) {
-            request.setApiUrl(baseUrl);
+        if (!StringUtils.hasText(request.getApi_url())) {
+            request.setApi_url(url);
+        }
+        if (!StringUtils.hasText(request.getExpires_on())) {
+            request.setExpires_on(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
+        }
+        if (!StringUtils.hasText(request.getSuccess_redirect_url())) {
+            request.setSuccess_redirect_url(resolveSuccessRedirectUrl());
         }
 
         HttpEntity<UnipileReconnectAccountRequest> entity = new HttpEntity<>(request, buildHeaders());
 
-        return executeRequest(url, HttpMethod.POST, entity, UnipileReconnectAccountResponse.class, "Reconnect Account");
+        UnipileReconnectAccountResponse reconnectResponse = executeRequest(url, HttpMethod.POST, entity, UnipileReconnectAccountResponse.class, "Reconnect Account");
+
+        if (reconnectResponse != null && StringUtils.hasText(authDomain) && reconnectResponse.getUrl() != null) {
+            String rewrittenUrl = reconnectResponse.getUrl().replace("account.unipile.com", authDomain);
+            reconnectResponse.setUrl(rewrittenUrl);
+        }
+
+        return reconnectResponse;
+    }
+
+    public void deleteAccount(String accountId) {
+        String url = baseUrl + "/api/v1/accounts/" + accountId;
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+        executeRequest(url, HttpMethod.DELETE, entity, Map.class, "Delete Account");
     }
 
     private String buildLinkedInUrl(UnipileLinkedInSearchRequest request) {
@@ -260,5 +288,24 @@ public class UnipileApiClient {
         builder.queryParam("category", "PEOPLE");
         
         return builder.toUriString();
+    }
+
+    private String resolveSuccessRedirectUrl() {
+        String currentHost = null;
+        try {
+            currentHost = ServletUriComponentsBuilder.fromCurrentContextPath().build().getHost();
+        } catch (Exception e) {
+            log.debug("No active request context found, using configured environment: {}", ambiente);
+        }
+
+        if (!StringUtils.hasText(currentHost)) {
+            currentHost = ambiente;
+        }
+
+        if ("localhost".equalsIgnoreCase(currentHost)) {
+            return "http://localhost:3000";
+        } else {
+            return "https://" + currentHost + ":80";
+        }
     }
 }

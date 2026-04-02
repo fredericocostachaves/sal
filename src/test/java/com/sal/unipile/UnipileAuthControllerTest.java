@@ -2,7 +2,6 @@ package com.sal.unipile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sal.unipile.dto.HostedAuthNotification;
-import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
 import com.sal.unipile.dto.UnipileAccountResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -13,9 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,30 +35,35 @@ class UnipileAuthControllerTest {
     @Test
     @DisplayName("Deve retornar o link de Hosted Auth com sucesso")
     void getHostedAuthLink_ShouldReturnUrl() throws Exception {
-        HostedAuthRequest request = HostedAuthRequest.builder()
-                .type("create")
-                .providers("*")
-                .api_url("https://api.example.com")
-                .expiresOn("2026-03-20T23:59:59Z")
-                .name("user123")
-                .notify_url("https://yourapp.com/callback")
-                .success_redirect_url("https://yourapp.com/success")
-                .failure_redirect_url("https://yourapp.com/failure")
-                .build();
-
         HostedAuthResponse response = HostedAuthResponse.builder()
                 .object("HostedAuthURL")
                 .url("https://account.unipile.com/hosted-auth-wizard-mock-123")
                 .build();
 
-        when(unipileApiClient.getHostedAuthLink(any(HostedAuthRequest.class))).thenReturn(response);
+        when(unipileApiClient.getHostedAuthLink(null)).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/hosted/accounts/link")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(post("/api/v1/unipile/accounts/link")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.object").value("HostedAuthURL"))
                 .andExpect(jsonPath("$.url").value("https://account.unipile.com/hosted-auth-wizard-mock-123"));
+    }
+
+    @Test
+    @DisplayName("Deve criar um link de conta com sucesso")
+    void createAccount_ShouldReturnUrl() throws Exception {
+        HostedAuthResponse response = HostedAuthResponse.builder()
+                .object("HostedAuthURL")
+                .url("https://account.unipile.com/hosted-auth-wizard-mock-456")
+                .build();
+
+        when(unipileApiClient.getHostedAuthLink(null)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/unipile/accounts")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.object").value("HostedAuthURL"))
+                .andExpect(jsonPath("$.url").value("https://account.unipile.com/hosted-auth-wizard-mock-456"));
     }
 
     @Test
@@ -71,7 +75,7 @@ class UnipileAuthControllerTest {
                 .name("user123")
                 .build();
 
-        mockMvc.perform(post("/api/v1/hosted/accounts/callback")
+        mockMvc.perform(post("/api/v1/unipile/accounts/callback")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(notification)))
                 .andExpect(status().isOk());
@@ -85,9 +89,21 @@ class UnipileAuthControllerTest {
 
         when(unipileApiClient.listAccounts()).thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/hosted/accounts")
+        mockMvc.perform(get("/api/v1/unipile/accounts")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.object").value("AccountList"));
     }
+
+    @Test
+    @DisplayName("Deve excluir uma conta com sucesso")
+    void deleteAccount_ShouldReturnOk() throws Exception {
+        String accountId = "acc_123";
+
+        mockMvc.perform(delete("/api/v1/unipile/accounts/" + accountId))
+                .andExpect(status().isOk());
+
+        verify(unipileApiClient).deleteAccount(accountId);
+    }
+
 }

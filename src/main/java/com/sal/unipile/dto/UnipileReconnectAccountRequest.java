@@ -12,13 +12,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UnipileReconnectAccountRequest {
-    private String accountId;
+    private String account_id;
     private String type;
     private Object providers;
-    private String apiUrl;
-    private String expiresOn;
-    private String notifyUrl;
+    private String api_url;
+    private String expires_on;
+    private String notify_url;
     private String name;
-    private String successRedirectUrl;
-    private String failureRedirectUrl;
+    private String success_redirect_url;
+    private String failure_redirect_url;
 }

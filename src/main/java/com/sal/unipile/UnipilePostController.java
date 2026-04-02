@@ -20,7 +20,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/unipile/posts")
+@RequestMapping("/api/v1/unipile/posts")
 @Tag(name = "Unipile Posts", description = "Endpoints para interação com posts via Unipile")
 public class UnipilePostController {
 

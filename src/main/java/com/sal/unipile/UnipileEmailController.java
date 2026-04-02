@@ -17,7 +17,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/unipile/emails")
+@RequestMapping("/api/v1/unipile/emails")
 @Tag(name = "Unipile Emails", description = "Endpoints para envio de e-mails via Unipile")
 public class UnipileEmailController {
 
