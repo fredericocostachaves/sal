@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UnipilePostController.class)
-@org.springframework.test.context.TestPropertySource
 class UnipilePostControllerTest {
 
     @Autowired

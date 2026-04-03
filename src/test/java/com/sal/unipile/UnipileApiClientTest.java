@@ -354,4 +354,23 @@ class UnipileApiClientTest {
 
         verify(restTemplate).exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(HttpEntity.class), eq(Map.class));
     }
+
+    @Test
+    void executeRequest_OnHttpStatusCodeException_ShouldThrowResponseStatusException() {
+        String accountId = "acc_123";
+        String expectedUrl = "https://api.example.com/api/v1/accounts/" + accountId;
+        String responseBody = "{\"error\":\"invalid_request\"}";
+        
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(new org.springframework.web.client.HttpClientErrorException(
+                        HttpStatus.BAD_REQUEST, "Bad Request", responseBody.getBytes(), java.nio.charset.StandardCharsets.UTF_8));
+
+        org.springframework.web.server.ResponseStatusException ex = org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.web.server.ResponseStatusException.class, 
+                () -> unipileApiClient.deleteAccount(accountId)
+        );
+        
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals(responseBody, ex.getReason());
+    }
 }

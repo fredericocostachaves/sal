@@ -15,6 +15,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -65,14 +66,14 @@ public class UnipileApiClient {
             if (response.getStatusCode().is2xxSuccessful()) {
                 return response.getBody();
             } else {
-                log.error("Unipile API returned status: {}", response.getStatusCode());
-                throw new RuntimeException("Unipile API error: " + response.getStatusCode().value());
+                log.warn("Unipile API returned status: {} for {}", response.getStatusCode(), operation);
+                throw new ResponseStatusException(response.getStatusCode(), "Unipile API error: " + response.getStatusCode().value());
             }
         } catch (org.springframework.web.client.HttpStatusCodeException ex) {
-            log.error("Unipile API error: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new RuntimeException("Error from Unipile API: " + ex.getStatusCode().value() + " body=" + ex.getResponseBodyAsString(), ex);
+            log.warn("Unipile API error ({}): status={} body={}", operation, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new ResponseStatusException(ex.getStatusCode(), ex.getResponseBodyAsString(), ex);
         } catch (Exception e) {
-            log.error("Exception calling Unipile API: {}", e.getMessage(), e);
+            log.error("Exception calling Unipile API ({}): {}", operation, e.getMessage(), e);
             throw new RuntimeException("Exception calling Unipile API: " + e.getMessage(), e);
         }
     }

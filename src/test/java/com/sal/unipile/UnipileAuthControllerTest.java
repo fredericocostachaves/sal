@@ -106,4 +106,18 @@ class UnipileAuthControllerTest {
         verify(unipileApiClient).deleteAccount(accountId);
     }
 
+    @Test
+    @DisplayName("Deve retornar o status code do UnipileApiClient quando houver ResponseStatusException")
+    void getHostedAuthLink_ShouldReturnUnipileError() throws Exception {
+        org.springframework.http.HttpStatus status = org.springframework.http.HttpStatus.UNAUTHORIZED;
+        String reason = "Invalid API Key";
+        
+        when(unipileApiClient.getHostedAuthLink(null))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(status, reason));
+
+        mockMvc.perform(post("/api/v1/unipile/accounts/link")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
 }

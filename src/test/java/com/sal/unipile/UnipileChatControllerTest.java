@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UnipileChatController.class)
-@org.springframework.test.context.TestPropertySource
 class UnipileChatControllerTest {
 
     @Autowired
