@@ -224,6 +224,8 @@ public class UnipileApiClient {
         if (authResponse != null && StringUtils.hasText(authDomain) && authResponse.getUrl() != null) {
             String rewrittenUrl = authResponse.getUrl().replace("account.unipile.com", authDomain);
             authResponse.setUrl(rewrittenUrl);
+        } else if (authResponse != null && authResponse.getUrl() != null) {
+            log.warn("authDomain is not configured. Returning original Unipile URL: {}", authResponse.getUrl());
         }
         
         return authResponse;
@@ -263,6 +265,8 @@ public class UnipileApiClient {
         if (reconnectResponse != null && StringUtils.hasText(authDomain) && reconnectResponse.getUrl() != null) {
             String rewrittenUrl = reconnectResponse.getUrl().replace("account.unipile.com", authDomain);
             reconnectResponse.setUrl(rewrittenUrl);
+        } else if (reconnectResponse != null && reconnectResponse.getUrl() != null) {
+            log.warn("authDomain is not configured. Returning original Unipile URL: {}", reconnectResponse.getUrl());
         }
 
         return reconnectResponse;
