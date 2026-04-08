@@ -34,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 @RequiredArgsConstructor
 public class UnipileApiClient {
 
-    @Value("${unipile.api.base-url:https://api23.unipile.com:15305}")
+    @Value("${unipile.api.base-url:}")
     private String baseUrl;
 
     @Value("${unipile.api.key:}")
