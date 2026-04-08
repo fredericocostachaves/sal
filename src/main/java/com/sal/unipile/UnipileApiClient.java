@@ -310,7 +310,7 @@ public class UnipileApiClient {
         if ("localhost".equalsIgnoreCase(currentHost)) {
             return "http://localhost:3000";
         } else {
-            return "https://" + currentHost + ":80";
+            return "https://" + currentHost;
         }
     }
 }
