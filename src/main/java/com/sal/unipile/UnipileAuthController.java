@@ -2,9 +2,13 @@ package com.sal.unipile;
 
 import com.sal.unipile.dto.HostedAuthNotification;
 import com.sal.unipile.dto.HostedAuthResponse;
+import com.sal.unipile.dto.UnipileAccount;
 import com.sal.unipile.dto.UnipileAccountResponse;
 import com.sal.unipile.dto.UnipileReconnectAccountRequest;
 import com.sal.unipile.dto.UnipileReconnectAccountResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/unipile/accounts")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Unipile Accounts", description = "Endpoints para gerenciamento de contas Unipile")
 public class UnipileAuthController {
 
     private final UnipileApiClient unipileApiClient;
@@ -48,6 +53,15 @@ public class UnipileAuthController {
     @GetMapping
     public UnipileAccountResponse listAccounts() {
         return unipileApiClient.listAccounts();
+    }
+
+    @Operation(summary = "Obtém uma conta pelo ID", description = "Retorna os detalhes de uma conta específica pelo ID")
+    @GetMapping("/{accountId}")
+    public UnipileAccount getAccountById(
+            @Parameter(description = "ID da conta")
+            @PathVariable String accountId) {
+        log.info("Getting Unipile account: {}", accountId);
+        return unipileApiClient.getAccountById(accountId);
     }
 
     @PostMapping("/reconnect")

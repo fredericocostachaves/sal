@@ -3,6 +3,7 @@ package com.sal.unipile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sal.unipile.dto.HostedAuthNotification;
 import com.sal.unipile.dto.HostedAuthResponse;
+import com.sal.unipile.dto.UnipileAccount;
 import com.sal.unipile.dto.UnipileAccountResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -118,6 +119,43 @@ class UnipileAuthControllerTest {
         mockMvc.perform(post("/api/v1/unipile/accounts/link")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Deve obter conta por ID com sucesso")
+    void getAccountById_ShouldReturnAccount() throws Exception {
+        String accountId = "acc_123";
+        UnipileAccount account = UnipileAccount.builder()
+                .object("Account")
+                .id(accountId)
+                .name("Test Account")
+                .type("LINKEDIN")
+                .created_at("2025-01-01T00:00:00.000Z")
+                .build();
+
+        when(unipileApiClient.getAccountById(accountId)).thenReturn(account);
+
+        mockMvc.perform(get("/api/v1/unipile/accounts/{accountId}", accountId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.object").value("Account"))
+                .andExpect(jsonPath("$.id").value(accountId))
+                .andExpect(jsonPath("$.name").value("Test Account"))
+                .andExpect(jsonPath("$.type").value("LINKEDIN"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar erro quando conta não for encontrada")
+    void getAccountById_WhenNotFound_ShouldReturnError() throws Exception {
+        String accountId = "non_existent";
+
+        when(unipileApiClient.getAccountById(accountId))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Account not found"));
+
+        mockMvc.perform(get("/api/v1/unipile/accounts/{accountId}", accountId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
 }
