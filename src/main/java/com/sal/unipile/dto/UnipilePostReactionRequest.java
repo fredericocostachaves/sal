@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Requisição para adicionar uma reação a um post")
 public class UnipilePostReactionRequest {
     @Schema(description = "Tipo de reação (LIKE, CELEBRATE, SUPPORT, LOVE, INSIGHTFUL, CURIOUS)", example = "LIKE")
     private String reaction;

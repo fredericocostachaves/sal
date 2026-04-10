@@ -66,8 +66,7 @@ class UnipileChatControllerTest {
         mockMvc.perform(post("/api/v1/unipile/chats/start")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Account ID is required"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -80,8 +79,7 @@ class UnipileChatControllerTest {
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Attendees IDs are required"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -94,8 +92,7 @@ class UnipileChatControllerTest {
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Text is required"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test

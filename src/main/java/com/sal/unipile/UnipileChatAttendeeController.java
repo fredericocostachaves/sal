@@ -3,6 +3,10 @@ package com.sal.unipile;
 import com.sal.unipile.dto.UnipileChatAttendee;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +27,15 @@ public class UnipileChatAttendeeController {
     private final UnipileApiClient unipileApiClient;
 
     @Operation(summary = "Obtém um participante pelo ID", description = "Retorna os detalhes de um participante de chat específico pelo ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Participante retornado com sucesso",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UnipileChatAttendee.class))}),
+            @ApiResponse(responseCode = "404", description = "Participante não encontrado", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content)
+    })
     @GetMapping("/{attendeeId}")
-    public ResponseEntity<?> getAttendeeById(
+    public ResponseEntity<UnipileChatAttendee> getAttendeeById(
             @Parameter(description = "ID do participante")
             @PathVariable String attendeeId,
             @Parameter(description = "ID da conta (opcional)")
@@ -36,7 +47,7 @@ public class UnipileChatAttendeeController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting attendee via Unipile: {}", e.getMessage());
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.status(500).build();
         }
     }
 }

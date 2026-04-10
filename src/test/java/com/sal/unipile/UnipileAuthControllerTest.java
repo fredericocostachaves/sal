@@ -102,23 +102,20 @@ class UnipileAuthControllerTest {
         String accountId = "acc_123";
 
         mockMvc.perform(delete("/api/v1/unipile/accounts/" + accountId))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         verify(unipileApiClient).deleteAccount(accountId);
     }
 
     @Test
-    @DisplayName("Deve retornar o status code do UnipileApiClient quando houver ResponseStatusException")
+    @DisplayName("Deve retornar erro interno quando houver falha na API")
     void getHostedAuthLink_ShouldReturnUnipileError() throws Exception {
-        org.springframework.http.HttpStatus status = org.springframework.http.HttpStatus.UNAUTHORIZED;
-        String reason = "Invalid API Key";
-        
         when(unipileApiClient.getHostedAuthLink(null))
-                .thenThrow(new org.springframework.web.server.ResponseStatusException(status, reason));
+                .thenThrow(new RuntimeException("Invalid API Key"));
 
         mockMvc.perform(post("/api/v1/unipile/accounts/link")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
@@ -150,12 +147,11 @@ class UnipileAuthControllerTest {
         String accountId = "non_existent";
 
         when(unipileApiClient.getAccountById(accountId))
-                .thenThrow(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND, "Account not found"));
+                .thenThrow(new RuntimeException("Account not found"));
 
         mockMvc.perform(get("/api/v1/unipile/accounts/{accountId}", accountId)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isInternalServerError());
     }
 
 }

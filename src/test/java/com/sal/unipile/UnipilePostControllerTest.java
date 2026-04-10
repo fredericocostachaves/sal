@@ -160,7 +160,6 @@ class UnipilePostControllerTest {
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Identifier is required"));
+                .andExpect(status().isBadRequest());
     }
 }

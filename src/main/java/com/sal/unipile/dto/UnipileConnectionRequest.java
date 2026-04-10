@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Requisição para enviar um pedido de conexão no LinkedIn")
 public class UnipileConnectionRequest {
     @Schema(description = "URL do perfil ou ID do membro no LinkedIn", example = "https://www.linkedin.com/in/william-gates-9381b/")
     private String identifier;

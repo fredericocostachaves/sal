@@ -71,8 +71,7 @@ class UnipileEmailControllerTest {
         mockMvc.perform(post("/api/v1/unipile/emails/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Account ID is required"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -87,8 +86,7 @@ class UnipileEmailControllerTest {
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Recipient (to) is required"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -106,8 +104,7 @@ class UnipileEmailControllerTest {
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Subject is required"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -125,7 +122,6 @@ class UnipileEmailControllerTest {
                         .queryParam("account_id", "test-account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$").value("Body is required"));
+                .andExpect(status().isBadRequest());
     }
 }

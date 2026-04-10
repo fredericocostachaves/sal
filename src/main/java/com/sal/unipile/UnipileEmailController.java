@@ -3,6 +3,10 @@ package com.sal.unipile;
 import com.sal.unipile.dto.UnipileEmailRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +31,15 @@ public class UnipileEmailController {
     private String defaultAccountId;
 
     @Operation(summary = "Envia um e-mail", description = "Envia um e-mail através da API do Unipile")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "E-mail enviado com sucesso",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(example = "{\"status\": \"success\", \"subject\": \"Assunto\", \"to\": []}"))}),
+            @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content)
+    })
     @PostMapping("/send")
-    public ResponseEntity<?> sendEmail(
+    public ResponseEntity<Map<String, Object>> sendEmail(
             @Parameter(description = "id da conta do unipile", example = "OH0HvmubQmauwdtfr6LM3Q")
             @RequestParam(name = "account_id", required = false) String accountId,
             @RequestBody UnipileEmailRequest request) {
@@ -37,19 +48,19 @@ public class UnipileEmailController {
 
         if (!StringUtils.hasText(targetAccountId)) {
             log.warn("Account ID not provided and no default configured");
-            return ResponseEntity.badRequest().body("Account ID is required");
+            return ResponseEntity.badRequest().build();
         }
 
         if (request.getTo() == null || request.getTo().isEmpty()) {
-            return ResponseEntity.badRequest().body("Recipient (to) is required");
+            return ResponseEntity.badRequest().build();
         }
 
         if (!StringUtils.hasText(request.getSubject())) {
-            return ResponseEntity.badRequest().body("Subject is required");
+            return ResponseEntity.badRequest().build();
         }
 
         if (!StringUtils.hasText(request.getBody())) {
-            return ResponseEntity.badRequest().body("Body is required");
+            return ResponseEntity.badRequest().build();
         }
 
         try {
@@ -63,7 +74,7 @@ public class UnipileEmailController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error sending email via Unipile: {}", e.getMessage());
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.status(500).build();
         }
     }
 }
