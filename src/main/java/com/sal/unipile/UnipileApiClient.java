@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -162,14 +164,21 @@ public class UnipileApiClient {
     public void startNewChat(String accountId, List<String> attendeesIds, String text) {
         String url = baseUrl + "/api/v1/chats";
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
-                .queryParam("account_id", accountId);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("attendees_ids", attendeesIds);
-        body.put("text", text);
+        HttpHeaders headers = buildHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, buildHeaders());
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        if (attendeesIds != null) {
+            for (String attendeeId : attendeesIds) {
+                body.add("attendees_ids", attendeeId);
+            }
+        }
+        body.add("text", text);
+        body.add("account_id", accountId);
+
+        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
 
         executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Start New Chat");
     }
@@ -304,11 +313,8 @@ public class UnipileApiClient {
         if (!StringUtils.hasText(request.getApi_url())) {
             request.setApi_url(url);
         }
-        if (!StringUtils.hasText(request.getExpiresOn())) {
-            request.setExpiresOn(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
-        }
         if (!StringUtils.hasText(request.getExpires_on())) {
-            request.setExpires_on(request.getExpiresOn());
+            request.setExpires_on(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
         }
         if (!StringUtils.hasText(request.getSuccess_redirect_url())) {
             request.setSuccess_redirect_url(resolveSuccessRedirectUrl());
@@ -415,7 +421,461 @@ public class UnipileApiClient {
         if ("localhost".equalsIgnoreCase(currentHost)) {
             return "http://localhost:3000";
         } else {
-            return "https://" + currentHost;
+            return "https://" + currentHost + ":80";
         }
+    }
+
+    public void deleteChat(String chatId, String accountId) {
+        String url = baseUrl + "/api/v1/chats/" + chatId;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        executeRequest(builder.build().toUri().toString(), HttpMethod.DELETE, entity, Map.class, "Delete Chat");
+    }
+
+    public void patchChat(String chatId, UnipileChatActionRequest request) {
+        String url = baseUrl + "/api/v1/chats/" + chatId;
+
+        HttpEntity<UnipileChatActionRequest> entity = new HttpEntity<>(request, buildHeaders());
+
+        executeRequest(url, HttpMethod.PATCH, entity, Map.class, "Patch Chat");
+    }
+
+    public UnipileMessageListResponse listChatMessages(String chatId, String accountId, Integer limit, String cursor,
+                                                        String before, String after) {
+        UnipileMessageListResponse combinedResponse = null;
+        List<UnipileMessage> allItems = new ArrayList<>();
+        String currentCursor = cursor;
+        int fetchedCount = 0;
+        int maxIterations = 100;
+        int pageLimit = (limit != null && limit > 0) ? Math.min(limit, 250) : 50;
+
+        do {
+            UnipileMessageListResponse pageResponse = listChatMessagesPage(chatId, accountId, pageLimit, currentCursor, before, after);
+
+            if (pageResponse == null || pageResponse.getItems() == null) {
+                break;
+            }
+
+            if (combinedResponse == null) {
+                combinedResponse = pageResponse;
+            }
+
+            allItems.addAll(pageResponse.getItems());
+            fetchedCount += pageResponse.getItems().size();
+            currentCursor = pageResponse.getCursor();
+
+            log.info("Fetched {}/{} messages so far...", fetchedCount, limit != null ? limit : "unlimited");
+
+        } while (StringUtils.hasText(currentCursor) && fetchedCount < (limit != null ? limit : Integer.MAX_VALUE) && --maxIterations > 0);
+
+        if (combinedResponse != null) {
+            combinedResponse.setItems(allItems);
+        }
+
+        return combinedResponse;
+    }
+
+    private UnipileMessageListResponse listChatMessagesPage(String chatId, String accountId, Integer limit, String cursor,
+                                                             String before, String after) {
+        String url = baseUrl + "/api/v1/chats/" + chatId + "/messages";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        if (limit != null && limit > 0) {
+            builder.queryParam("limit", Math.min(limit, 250));
+        }
+
+        if (StringUtils.hasText(cursor)) {
+            builder.queryParam("cursor", cursor);
+        }
+
+        if (StringUtils.hasText(before)) {
+            builder.queryParam("before", before);
+        }
+
+        if (StringUtils.hasText(after)) {
+            builder.queryParam("after", after);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileMessageListResponse.class, "List Chat Messages");
+    }
+
+    public void sendMessageInChat(String chatId, String accountId, UnipileSendMessageRequest request) {
+        String url = baseUrl + "/api/v1/chats/" + chatId + "/messages";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        request.setAccount_id(accountId);
+
+        HttpHeaders headers = buildHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("text", request.getText());
+        body.add("account_id", request.getAccount_id());
+        
+        if (StringUtils.hasText(request.getThread_id())) {
+            body.add("thread_id", request.getThread_id());
+        }
+        if (StringUtils.hasText(request.getQuote_id())) {
+            body.add("quote_id", request.getQuote_id());
+        }
+        if (StringUtils.hasText(request.getTyping_duration())) {
+            body.add("typing_duration", request.getTyping_duration());
+        }
+
+        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Send Message In Chat");
+    }
+
+    public UnipileChatAttendeeListResponse listChatAttendees(String chatId, String accountId) {
+        String url = baseUrl + "/api/v1/chats/" + chatId + "/attendees";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileChatAttendeeListResponse.class, "List Chat Attendees");
+    }
+
+    public void syncChatHistory(String chatId, String accountId) {
+        String url = baseUrl + "/api/v1/chats/" + chatId + "/sync-history";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Sync Chat History");
+    }
+
+    public UnipileMessage getMessage(String messageId, String accountId) {
+        String url = baseUrl + "/api/v1/messages/" + messageId;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileMessage.class, "Get Message");
+    }
+
+    public UnipileMessageListResponse listAllMessages(String accountId, Integer limit, String cursor, String before, String after) {
+        UnipileMessageListResponse combinedResponse = null;
+        List<UnipileMessage> allItems = new ArrayList<>();
+        String currentCursor = cursor;
+        int fetchedCount = 0;
+        int maxIterations = 100;
+        int pageLimit = (limit != null && limit > 0) ? Math.min(limit, 250) : 50;
+
+        do {
+            UnipileMessageListResponse pageResponse = listAllMessagesPage(accountId, pageLimit, currentCursor, before, after);
+
+            if (pageResponse == null || pageResponse.getItems() == null) {
+                break;
+            }
+
+            if (combinedResponse == null) {
+                combinedResponse = pageResponse;
+            }
+
+            allItems.addAll(pageResponse.getItems());
+            fetchedCount += pageResponse.getItems().size();
+            currentCursor = pageResponse.getCursor();
+
+            log.info("Fetched {}/{} messages so far...", fetchedCount, limit != null ? limit : "unlimited");
+
+        } while (StringUtils.hasText(currentCursor) && fetchedCount < (limit != null ? limit : Integer.MAX_VALUE) && --maxIterations > 0);
+
+        if (combinedResponse != null) {
+            combinedResponse.setItems(allItems);
+        }
+
+        return combinedResponse;
+    }
+
+    private UnipileMessageListResponse listAllMessagesPage(String accountId, Integer limit, String cursor, String before, String after) {
+        String url = baseUrl + "/api/v1/messages";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        if (limit != null && limit > 0) {
+            builder.queryParam("limit", Math.min(limit, 250));
+        }
+
+        if (StringUtils.hasText(cursor)) {
+            builder.queryParam("cursor", cursor);
+        }
+
+        if (StringUtils.hasText(before)) {
+            builder.queryParam("before", before);
+        }
+
+        if (StringUtils.hasText(after)) {
+            builder.queryParam("after", after);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileMessageListResponse.class, "List All Messages");
+    }
+
+    public void updateMessage(String messageId, UnipileUpdateMessageRequest request) {
+        String url = baseUrl + "/api/v1/messages/" + messageId;
+
+        HttpEntity<UnipileUpdateMessageRequest> entity = new HttpEntity<>(request, buildHeaders());
+
+        executeRequest(url, HttpMethod.PATCH, entity, Map.class, "Update Message");
+    }
+
+    public void deleteMessage(String messageId, String accountId) {
+        String url = baseUrl + "/api/v1/messages/" + messageId;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+        builder.queryParam("account_id", accountId);
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        executeRequest(builder.build().toUri().toString(), HttpMethod.DELETE, entity, Map.class, "Delete Message");
+    }
+
+    public void addMessageReaction(String messageId, UnipileAddReactionRequest request) {
+        String url = baseUrl + "/api/v1/messages/" + messageId + "/reaction";
+
+        HttpEntity<UnipileAddReactionRequest> entity = new HttpEntity<>(request, buildHeaders());
+
+        executeRequest(url, HttpMethod.POST, entity, Map.class, "Add Message Reaction");
+    }
+
+    public Map getAttachment(String messageId, String attachmentId, String accountId) {
+        String url = baseUrl + "/api/v1/messages/" + messageId + "/attachments/" + attachmentId;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, Map.class, "Get Attachment");
+    }
+
+    public void forwardMessage(String messageId, UnipileForwardMessageRequest request) {
+        String url = baseUrl + "/api/v1/messages/" + messageId + "/forward";
+
+        HttpEntity<UnipileForwardMessageRequest> entity = new HttpEntity<>(request, buildHeaders());
+
+        executeRequest(url, HttpMethod.POST, entity, Map.class, "Forward Message");
+    }
+
+    public UnipileChatAttendeeListResponse listAllAttendees(String accountId, Integer limit, String cursor) {
+        UnipileChatAttendeeListResponse combinedResponse = null;
+        List<UnipileChatAttendee> allItems = new ArrayList<>();
+        String currentCursor = cursor;
+        int fetchedCount = 0;
+        int maxIterations = 100;
+        int pageLimit = (limit != null && limit > 0) ? Math.min(limit, 250) : 50;
+
+        do {
+            UnipileChatAttendeeListResponse pageResponse = listAllAttendeesPage(accountId, pageLimit, currentCursor);
+
+            if (pageResponse == null || pageResponse.getItems() == null) {
+                break;
+            }
+
+            if (combinedResponse == null) {
+                combinedResponse = pageResponse;
+            }
+
+            allItems.addAll(pageResponse.getItems());
+            fetchedCount += pageResponse.getItems().size();
+            currentCursor = pageResponse.getCursor();
+
+            log.info("Fetched {}/{} attendees so far...", fetchedCount, limit != null ? limit : "unlimited");
+
+        } while (StringUtils.hasText(currentCursor) && fetchedCount < (limit != null ? limit : Integer.MAX_VALUE) && --maxIterations > 0);
+
+        if (combinedResponse != null) {
+            combinedResponse.setItems(allItems);
+        }
+
+        return combinedResponse;
+    }
+
+    private UnipileChatAttendeeListResponse listAllAttendeesPage(String accountId, Integer limit, String cursor) {
+        String url = baseUrl + "/api/v1/chat_attendees";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        if (limit != null && limit > 0) {
+            builder.queryParam("limit", Math.min(limit, 250));
+        }
+
+        if (StringUtils.hasText(cursor)) {
+            builder.queryParam("cursor", cursor);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileChatAttendeeListResponse.class, "List All Attendees");
+    }
+
+    public UnipileChatListResponse listChatsByAttendee(String attendeeId, String accountId, Integer limit, String cursor) {
+        UnipileChatListResponse combinedResponse = null;
+        List<UnipileChat> allItems = new ArrayList<>();
+        String currentCursor = cursor;
+        int fetchedCount = 0;
+        int maxIterations = 100;
+        int pageLimit = (limit != null && limit > 0) ? Math.min(limit, 250) : 50;
+
+        do {
+            UnipileChatListResponse pageResponse = listChatsByAttendeePage(attendeeId, accountId, pageLimit, currentCursor);
+
+            if (pageResponse == null || pageResponse.getItems() == null) {
+                break;
+            }
+
+            if (combinedResponse == null) {
+                combinedResponse = pageResponse;
+            }
+
+            allItems.addAll(pageResponse.getItems());
+            fetchedCount += pageResponse.getItems().size();
+            currentCursor = pageResponse.getCursor();
+
+            log.info("Fetched {}/{} chats so far...", fetchedCount, limit != null ? limit : "unlimited");
+
+        } while (StringUtils.hasText(currentCursor) && fetchedCount < (limit != null ? limit : Integer.MAX_VALUE) && --maxIterations > 0);
+
+        if (combinedResponse != null) {
+            combinedResponse.setItems(allItems);
+        }
+
+        return combinedResponse;
+    }
+
+    private UnipileChatListResponse listChatsByAttendeePage(String attendeeId, String accountId, Integer limit, String cursor) {
+        String url = baseUrl + "/api/v1/chat_attendees/" + attendeeId + "/chats";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        if (limit != null && limit > 0) {
+            builder.queryParam("limit", Math.min(limit, 250));
+        }
+
+        if (StringUtils.hasText(cursor)) {
+            builder.queryParam("cursor", cursor);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileChatListResponse.class, "List Chats By Attendee");
+    }
+
+    public UnipileMessageListResponse listMessagesByAttendee(String attendeeId, String accountId, Integer limit, String cursor) {
+        UnipileMessageListResponse combinedResponse = null;
+        List<UnipileMessage> allItems = new ArrayList<>();
+        String currentCursor = cursor;
+        int fetchedCount = 0;
+        int maxIterations = 100;
+        int pageLimit = (limit != null && limit > 0) ? Math.min(limit, 250) : 50;
+
+        do {
+            UnipileMessageListResponse pageResponse = listMessagesByAttendeePage(attendeeId, accountId, pageLimit, currentCursor);
+
+            if (pageResponse == null || pageResponse.getItems() == null) {
+                break;
+            }
+
+            if (combinedResponse == null) {
+                combinedResponse = pageResponse;
+            }
+
+            allItems.addAll(pageResponse.getItems());
+            fetchedCount += pageResponse.getItems().size();
+            currentCursor = pageResponse.getCursor();
+
+            log.info("Fetched {}/{} messages so far...", fetchedCount, limit != null ? limit : "unlimited");
+
+        } while (StringUtils.hasText(currentCursor) && fetchedCount < (limit != null ? limit : Integer.MAX_VALUE) && --maxIterations > 0);
+
+        if (combinedResponse != null) {
+            combinedResponse.setItems(allItems);
+        }
+
+        return combinedResponse;
+    }
+
+    private UnipileMessageListResponse listMessagesByAttendeePage(String attendeeId, String accountId, Integer limit, String cursor) {
+        String url = baseUrl + "/api/v1/chat_attendees/" + attendeeId + "/messages";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        if (limit != null && limit > 0) {
+            builder.queryParam("limit", Math.min(limit, 250));
+        }
+
+        if (StringUtils.hasText(cursor)) {
+            builder.queryParam("cursor", cursor);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileMessageListResponse.class, "List Messages By Attendee");
+    }
+
+    public Map getAttendeeProfilePicture(String attendeeId, String accountId) {
+        String url = baseUrl + "/api/v1/chat_attendees/" + attendeeId + "/profile-picture";
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, Map.class, "Get Attendee Profile Picture");
     }
 }

@@ -190,9 +190,9 @@ class UnipileApiClientTest {
         assertEquals("https://auth.yourapp.com/reconnect-token", result.getUrl());
     }
     @Test
-    void getHostedAuthLink_ShouldConvertExpiresOnToExpires_on() {
+    void getHostedAuthLink_ShouldUsePassedExpires_on() {
         HostedAuthRequest request = HostedAuthRequest.builder()
-                .expiresOn("2026-04-03T00:00:00.000Z")
+                .expires_on("2026-04-03T00:00:00.000Z")
                 .build();
         
         HostedAuthResponse mockResponse = HostedAuthResponse.builder()
@@ -372,5 +372,56 @@ class UnipileApiClientTest {
         
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         assertEquals(responseBody, ex.getReason());
+    }
+
+    @Test
+    void sendMessageInChat_ShouldUseMultipartAndNoQueryParam() {
+        String chatId = "chat_123";
+        String accountId = "acc_456";
+        com.sal.unipile.dto.UnipileSendMessageRequest request = com.sal.unipile.dto.UnipileSendMessageRequest.builder()
+                .text("Hello")
+                .build();
+
+        String expectedUrl = "https://api.example.com/api/v1/chats/" + chatId + "/messages";
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.POST), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(new ResponseEntity<>(Collections.singletonMap("id", "msg_123"), HttpStatus.OK));
+
+        unipileApiClient.sendMessageInChat(chatId, accountId, request);
+
+        verify(restTemplate).exchange(eq(expectedUrl), eq(HttpMethod.POST), argThat(entity -> {
+            Object body = entity.getBody();
+            if (!(body instanceof org.springframework.util.MultiValueMap)) return false;
+            @SuppressWarnings("unchecked")
+            org.springframework.util.MultiValueMap<String, Object> map = (org.springframework.util.MultiValueMap<String, Object>) body;
+            return "Hello".equals(map.getFirst("text")) &&
+                   accountId.equals(map.getFirst("account_id")) &&
+                   org.springframework.http.MediaType.MULTIPART_FORM_DATA.includes(entity.getHeaders().getContentType());
+        }), eq(Map.class));
+    }
+
+    @Test
+    void startNewChat_ShouldUseMultipartAndNoQueryParam() {
+        String accountId = "acc_456";
+        java.util.List<String> attendeesIds = java.util.List.of("att_1", "att_2");
+        String text = "Start";
+
+        String expectedUrl = "https://api.example.com/api/v1/chats";
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.POST), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(new ResponseEntity<>(Collections.singletonMap("id", "chat_123"), HttpStatus.OK));
+
+        unipileApiClient.startNewChat(accountId, attendeesIds, text);
+
+        verify(restTemplate).exchange(eq(expectedUrl), eq(HttpMethod.POST), argThat(entity -> {
+            Object body = entity.getBody();
+            if (!(body instanceof org.springframework.util.MultiValueMap)) return false;
+            @SuppressWarnings("unchecked")
+            org.springframework.util.MultiValueMap<String, Object> map = (org.springframework.util.MultiValueMap<String, Object>) body;
+            return "Start".equals(map.getFirst("text")) &&
+                   accountId.equals(map.getFirst("account_id")) &&
+                   attendeesIds.equals(map.get("attendees_ids")) &&
+                   org.springframework.http.MediaType.MULTIPART_FORM_DATA.includes(entity.getHeaders().getContentType());
+        }), eq(Map.class));
     }
 }

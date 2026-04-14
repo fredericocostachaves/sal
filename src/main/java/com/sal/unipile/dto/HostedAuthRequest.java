@@ -28,12 +28,8 @@ public class HostedAuthRequest {
     private String api_url;
 
     @JsonProperty("expires_on")
-    @Schema(description = "Data de expiração do link")
+    @Schema(description = "Data de expiração do link", example = "2026-04-11T22:40:26.695Z")
     private String expires_on;
-
-    @JsonProperty("expiresOn")
-    @Schema(description = "Data de expiração do link (alias)")
-    private String expiresOn;
 
     @JsonProperty("name")
     @Schema(description = "Nome para identificar a conta ou usuário", example = "John Doe")
