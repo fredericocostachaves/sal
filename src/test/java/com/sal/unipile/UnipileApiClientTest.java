@@ -375,14 +375,14 @@ class UnipileApiClientTest {
     }
 
     @Test
-    void sendMessageInChat_ShouldUseMultipartAndNoQueryParam() {
+    void sendMessageInChat_ShouldUseFormData() {
         String chatId = "chat_123";
         String accountId = "acc_456";
         com.sal.unipile.dto.UnipileSendMessageRequest request = com.sal.unipile.dto.UnipileSendMessageRequest.builder()
                 .text("Hello")
                 .build();
 
-        String expectedUrl = "https://api.example.com/api/v1/chats/" + chatId + "/messages";
+        String expectedUrl = "https://api.example.com/api/v1/chats/" + chatId + "/messages?account_id=" + accountId;
 
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.POST), any(HttpEntity.class), eq(Map.class)))
                 .thenReturn(new ResponseEntity<>(Collections.singletonMap("id", "msg_123"), HttpStatus.OK));
@@ -392,21 +392,23 @@ class UnipileApiClientTest {
         verify(restTemplate).exchange(eq(expectedUrl), eq(HttpMethod.POST), argThat(entity -> {
             Object body = entity.getBody();
             if (!(body instanceof org.springframework.util.MultiValueMap)) return false;
-            @SuppressWarnings("unchecked")
-            org.springframework.util.MultiValueMap<String, Object> map = (org.springframework.util.MultiValueMap<String, Object>) body;
-            return "Hello".equals(map.getFirst("text")) &&
-                   accountId.equals(map.getFirst("account_id")) &&
-                   org.springframework.http.MediaType.MULTIPART_FORM_DATA.includes(entity.getHeaders().getContentType());
+            org.springframework.util.MultiValueMap mv = (org.springframework.util.MultiValueMap) body;
+            if (!mv.containsKey("text")) return false;
+            Object textVal = mv.getFirst("text");
+            boolean textOk = "Hello".equals(textVal);
+            org.springframework.http.MediaType ct = entity.getHeaders().getContentType();
+            boolean contentTypeOk = ct != null && org.springframework.http.MediaType.MULTIPART_FORM_DATA.includes(ct);
+            return textOk && accountId.equals(mv.getFirst("account_id")) && contentTypeOk;
         }), eq(Map.class));
     }
 
     @Test
-    void startNewChat_ShouldUseMultipartAndNoQueryParam() {
+    void startNewChat_ShouldUseJson() {
         String accountId = "acc_456";
         java.util.List<String> attendeesIds = java.util.List.of("att_1", "att_2");
         String text = "Start";
 
-        String expectedUrl = "https://api.example.com/api/v1/chats";
+        String expectedUrl = "https://api.example.com/api/v1/chats?account_id=" + accountId;
 
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.POST), any(HttpEntity.class), eq(Map.class)))
                 .thenReturn(new ResponseEntity<>(Collections.singletonMap("id", "chat_123"), HttpStatus.OK));
@@ -415,13 +417,12 @@ class UnipileApiClientTest {
 
         verify(restTemplate).exchange(eq(expectedUrl), eq(HttpMethod.POST), argThat(entity -> {
             Object body = entity.getBody();
-            if (!(body instanceof org.springframework.util.MultiValueMap)) return false;
-            @SuppressWarnings("unchecked")
-            org.springframework.util.MultiValueMap<String, Object> map = (org.springframework.util.MultiValueMap<String, Object>) body;
-            return "Start".equals(map.getFirst("text")) &&
-                   accountId.equals(map.getFirst("account_id")) &&
-                   attendeesIds.equals(map.get("attendees_ids")) &&
-                   org.springframework.http.MediaType.MULTIPART_FORM_DATA.includes(entity.getHeaders().getContentType());
+            if (!(body instanceof com.sal.unipile.dto.UnipileChatRequest)) return false;
+            com.sal.unipile.dto.UnipileChatRequest req = (com.sal.unipile.dto.UnipileChatRequest) body;
+            return "Start".equals(req.getText()) &&
+                   accountId.equals(req.getAccount_id()) &&
+                   attendeesIds.equals(req.getAttendees_ids()) &&
+                   org.springframework.http.MediaType.APPLICATION_JSON.includes(entity.getHeaders().getContentType());
         }), eq(Map.class));
     }
 }

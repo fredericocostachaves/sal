@@ -164,21 +164,16 @@ public class UnipileApiClient {
     public void startNewChat(String accountId, List<String> attendeesIds, String text) {
         String url = baseUrl + "/api/v1/chats";
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                .queryParam("account_id", accountId);
 
-        HttpHeaders headers = buildHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        UnipileChatRequest request = UnipileChatRequest.builder()
+                .account_id(accountId)
+                .attendees_ids(attendeesIds)
+                .text(text)
+                .build();
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        if (attendeesIds != null) {
-            for (String attendeeId : attendeesIds) {
-                body.add("attendees_ids", attendeeId);
-            }
-        }
-        body.add("text", text);
-        body.add("account_id", accountId);
-
-        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
+        HttpEntity<UnipileChatRequest> entity = new HttpEntity<>(request, buildHeaders());
 
         executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Start New Chat");
     }
@@ -516,26 +511,33 @@ public class UnipileApiClient {
     public void sendMessageInChat(String chatId, String accountId, UnipileSendMessageRequest request) {
         String url = baseUrl + "/api/v1/chats/" + chatId + "/messages";
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url)
+                .queryParam("account_id", accountId);
 
+        // Ensure account_id is set on request for consistency
         request.setAccount_id(accountId);
 
-        HttpHeaders headers = buildHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("text", request.getText());
-        body.add("account_id", request.getAccount_id());
-        
+        // Build multipart/form-data body as required by Unipile API
+        LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        if (StringUtils.hasText(request.getText())) {
+            body.add("text", request.getText());
+        }
+        if (StringUtils.hasText(request.getAccount_id())) {
+            body.add("account_id", request.getAccount_id());
+        }
         if (StringUtils.hasText(request.getThread_id())) {
             body.add("thread_id", request.getThread_id());
         }
         if (StringUtils.hasText(request.getQuote_id())) {
             body.add("quote_id", request.getQuote_id());
         }
-        if (StringUtils.hasText(request.getTyping_duration())) {
-            body.add("typing_duration", request.getTyping_duration());
+        if (request.getTyping_duration() != null) {
+            body.add("typing_duration", String.valueOf(request.getTyping_duration()));
         }
+
+        HttpHeaders headers = buildHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
         HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
 

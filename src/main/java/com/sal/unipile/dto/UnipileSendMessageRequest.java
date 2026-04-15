@@ -1,6 +1,7 @@
 package com.sal.unipile.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Requisição para enviar mensagem em um chat")
 public class UnipileSendMessageRequest {
 
@@ -30,5 +32,5 @@ public class UnipileSendMessageRequest {
     private String quote_id;
 
     @Schema(description = "Duração da simulação de digitação em milissegundos (opcional, para WhatsApp)")
-    private String typing_duration;
+    private Integer typing_duration;
 }
