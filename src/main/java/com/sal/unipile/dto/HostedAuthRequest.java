@@ -17,19 +17,19 @@ import lombok.NoArgsConstructor;
 public class HostedAuthRequest {
     @JsonProperty("type")
     @Schema(description = "Tipo de ação (create ou reconnect)", example = "create")
-    private String type; // 'create' | 'reconnect'
+    private String type;
 
     @JsonProperty("providers")
     @Schema(description = "Provedores permitidos (lista de strings ou '*')", example = "[\"LINKEDIN\"]")
-    private Object providers; // string[] | '*'
+    private Object providers;
 
     @JsonProperty("api_url")
     @Schema(description = "URL da API")
     private String api_url;
 
-    @JsonProperty("expires_on")
+    @JsonProperty("expiresOn")
     @Schema(description = "Data de expiração do link", example = "2026-04-11T22:40:26.695Z")
-    private String expires_on;
+    private String expiresOn;
 
     @JsonProperty("name")
     @Schema(description = "Nome para identificar a conta ou usuário", example = "John Doe")

@@ -190,9 +190,9 @@ class UnipileApiClientTest {
         assertEquals("https://auth.yourapp.com/reconnect-token", result.getUrl());
     }
     @Test
-    void getHostedAuthLink_ShouldUsePassedExpires_on() {
+    void getHostedAuthLink_ShouldUsePassedExpiresOn() {
         HostedAuthRequest request = HostedAuthRequest.builder()
-                .expires_on("2026-04-03T00:00:00.000Z")
+                .expiresOn("2026-04-03T00:00:00.000Z")
                 .build();
         
         HostedAuthResponse mockResponse = HostedAuthResponse.builder()
@@ -207,7 +207,7 @@ class UnipileApiClientTest {
 
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), argThat(entity -> {
             HostedAuthRequest body = (HostedAuthRequest) entity.getBody();
-            return body != null && "2026-04-03T00:00:00.000Z".equals(body.getExpires_on());
+            return body != null && "2026-04-03T00:00:00.000Z".equals(body.getExpiresOn());
         }), eq(HostedAuthResponse.class));
     }
 
@@ -247,9 +247,9 @@ class UnipileApiClientTest {
 
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), argThat(entity -> {
             HostedAuthRequest body = (HostedAuthRequest) entity.getBody();
-            if (body == null || body.getExpires_on() == null) return false;
+            if (body == null || body.getExpiresOn() == null) return false;
             // Format: YYYY-MM-DDTHH:MM:SS.sssZ
-            return body.getExpires_on().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
+            return body.getExpiresOn().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
         }), eq(HostedAuthResponse.class));
     }
 
@@ -271,9 +271,9 @@ class UnipileApiClientTest {
 
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), argThat(entity -> {
             com.sal.unipile.dto.UnipileReconnectAccountRequest body = (com.sal.unipile.dto.UnipileReconnectAccountRequest) entity.getBody();
-            if (body == null || body.getExpires_on() == null) return false;
+            if (body == null || body.getExpiresOn() == null) return false;
             // Format: YYYY-MM-DDTHH:MM:SS.sssZ
-            return body.getExpires_on().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
+            return body.getExpiresOn().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
         }), eq(com.sal.unipile.dto.UnipileReconnectAccountResponse.class));
     }
 

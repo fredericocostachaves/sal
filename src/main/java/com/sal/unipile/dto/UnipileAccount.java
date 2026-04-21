@@ -47,6 +47,9 @@ public class UnipileAccount {
     @Schema(description = "Lista de fontes de dados")
     private List<Source> sources;
 
+    @Schema(description = "E-mail da conta", example = "user@example.com")
+    private String email;
+
     @Schema(description = "Parâmetros de conexão")
     private Map<String, Object> connection_params;
 

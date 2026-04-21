@@ -30,6 +30,9 @@ class UnipileAuthControllerTest {
     @MockitoBean
     private UnipileApiClient unipileApiClient;
 
+    @MockitoBean
+    private SupabaseService supabaseService;
+
     @Autowired
     private ObjectMapper objectMapper;
 

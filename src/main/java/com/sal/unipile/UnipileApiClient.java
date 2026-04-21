@@ -293,7 +293,8 @@ public class UnipileApiClient {
         executeRequest(builder.build().toUri().toString(), HttpMethod.POST, entity, Map.class, "Send Email");
     }
 
-    public HostedAuthResponse getHostedAuthLink(HostedAuthRequest request) {
+    public HostedAuthResponse
+    getHostedAuthLink(HostedAuthRequest request) {
         String url = baseUrl + "/api/v1/hosted/accounts/link";
 
         if (request == null) {
@@ -308,8 +309,8 @@ public class UnipileApiClient {
         if (!StringUtils.hasText(request.getApi_url())) {
             request.setApi_url(url);
         }
-        if (!StringUtils.hasText(request.getExpires_on())) {
-            request.setExpires_on(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
+        if (!StringUtils.hasText(request.getExpiresOn())) {
+            request.setExpiresOn(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
         }
         if (!StringUtils.hasText(request.getSuccess_redirect_url())) {
             request.setSuccess_redirect_url(resolveSuccessRedirectUrl());
@@ -357,8 +358,8 @@ public class UnipileApiClient {
         if (!StringUtils.hasText(request.getApi_url())) {
             request.setApi_url(url);
         }
-        if (!StringUtils.hasText(request.getExpires_on())) {
-            request.setExpires_on(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
+        if (!StringUtils.hasText(request.getExpiresOn())) {
+            request.setExpiresOn(ISO_INSTANT_MS.format(Instant.now().plus(1, ChronoUnit.DAYS)));
         }
         if (!StringUtils.hasText(request.getSuccess_redirect_url())) {
             request.setSuccess_redirect_url(resolveSuccessRedirectUrl());

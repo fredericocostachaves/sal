@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UnipileAuthController {
 
     private final UnipileApiClient unipileApiClient;
+    private final SupabaseService supabaseService;
 
     @Operation(summary = "Gera um link de autenticação hospedada", description = "Retorna um link para o usuário realizar a conexão de uma conta via Unipile")
     @ApiResponses(value = {
@@ -73,6 +75,7 @@ public class UnipileAuthController {
         log.info("Received Unipile Hosted Auth Callback: {}", notification);
         if ("CREATION_SUCCESS".equals(notification.getStatus())) {
             log.info("Successfully linked Unipile account {} for user {}", notification.getAccount_id(), notification.getName());
+            supabaseService.saveAccount(notification, notification.getName());
         } else if ("CREATION_FAILURE".equals(notification.getStatus())) {
             log.warn("Failed to link Unipile account for user {}: {}", notification.getName(), notification.getStatus());
         }
@@ -148,6 +151,27 @@ public class UnipileAuthController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             log.error("Error deleting account {}: {}", accountId, e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @Operation(summary = "Sincroniza contas com o banco de dados", description = "Busca todas as contas do Unipile e sincroniza com o banco de dados local")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contas sincronizadas com sucesso"),
+            @ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content)
+    })
+    @PostMapping("/sync")
+    public ResponseEntity<Void> syncAccounts(@Parameter(description = "ID do usuário no Supabase") @RequestParam String userId) {
+        log.info("Syncing accounts for user: {}", userId);
+        try {
+            UnipileAccountResponse accountsResponse = unipileApiClient.listAccounts();
+            if (accountsResponse != null && accountsResponse.getItems() != null) {
+                supabaseService.syncAccounts(accountsResponse.getItems(), userId);
+                log.info("Synced {} accounts for user: {}", accountsResponse.getItems().size(), userId);
+            }
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error syncing accounts: {}", e.getMessage());
             return ResponseEntity.status(500).build();
         }
     }
