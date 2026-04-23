@@ -40,7 +40,7 @@ public class Account {
     @Column
     private String initials;
 
-    @Column(name = "proxy_settings", columnDefinition = "jsonb")
+    @Column(name = "proxy_settings", columnDefinition = "TEXT")
     private String proxySettings;
 
     @Transient

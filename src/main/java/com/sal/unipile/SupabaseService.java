@@ -133,7 +133,41 @@ public class SupabaseService {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to sync accounts to database", e);
+            log.error("Failed to sync accounts", e);
+        }
+    }
+
+    public void syncSingleAccount(UnipileAccount account, String userId) {
+        if (accountRepository == null) {
+            log.warn("AccountRepository not configured; skipping syncSingleAccount");
+            return;
+        }
+        try {
+            UUID userUuid = UUID.fromString(userId);
+            String unipileId = account.getId();
+
+            Optional<Account> existingOpt = accountRepository.findByUnipileAccountId(unipileId);
+
+            if (existingOpt.isPresent()) {
+                Account existing = existingOpt.get();
+                existing.setName(account.getName());
+                existing.setStatus(mapAccountStatus(account));
+                existing.setInitials(extractInitials(account.getName()));
+                accountRepository.save(existing);
+                log.info("Updated account in database: {}", unipileId);
+            } else {
+                Account newAccount = Account.builder()
+                        .userId(userUuid)
+                        .name(account.getName())
+                        .status(mapAccountStatus(account))
+                        .initials(extractInitials(account.getName()))
+                        .unipileAccountId(account.getId())
+                        .build();
+                accountRepository.save(newAccount);
+                log.info("Created new account in database: {}", unipileId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to sync single account", e);
         }
     }
 

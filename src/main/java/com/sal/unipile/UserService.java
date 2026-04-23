@@ -8,8 +8,10 @@ import com.sal.unipile.persistence.Account;
 import com.sal.unipile.persistence.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -24,17 +26,18 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthResponse register(AuthRequest request) {
+        User user;
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail().toLowerCase());
         if (existingUser.isPresent()) {
-            throw new IllegalArgumentException("E-mail já cadastrado");
+            user = existingUser.get();
+            user.setEncryptedPassword(passwordEncoder.encode(request.getPassword()));
+        } else {
+            user = User.builder()
+                    .id(UUID.randomUUID())
+                    .email(request.getEmail().toLowerCase())
+                    .encryptedPassword(passwordEncoder.encode(request.getPassword()))
+                    .build();
         }
-
-        User user = User.builder()
-                .id(UUID.randomUUID())
-                .email(request.getEmail().toLowerCase())
-                .encryptedPassword(passwordEncoder.encode(request.getPassword()))
-                .build();
-        
         user = userRepository.save(user);
 
         String token = generateToken(user.getId());
@@ -50,13 +53,13 @@ public class UserService {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail().toLowerCase());
         
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("Usuário ou senha inválidos");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário ou senha inválidos");
         }
 
         User user = userOpt.get();
         
         if (!passwordEncoder.matches(request.getPassword(), user.getEncryptedPassword())) {
-            throw new IllegalArgumentException("Usuário ou senha inválidos");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário ou senha inválidos");
         }
 
         String token = generateToken(user.getId());

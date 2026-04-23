@@ -1,7 +1,9 @@
 package com.sal.unipile;
 
 import com.sal.unipile.dto.HostedAuthNotification;
+import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
+import com.sal.unipile.dto.LinkedInSyncRequest;
 import com.sal.unipile.dto.UnipileAccount;
 import com.sal.unipile.dto.UnipileAccountResponse;
 import com.sal.unipile.dto.UnipileReconnectAccountRequest;
@@ -43,9 +45,12 @@ public class UnipileAuthController {
             @ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content)
     })
     @PostMapping("/link")
-    public ResponseEntity<HostedAuthResponse> getHostedAuthLink() {
+    public ResponseEntity<HostedAuthResponse> getHostedAuthLink(
+            @Parameter(description = "ID do usuário na tabela auth.users")
+            @RequestParam String name) {
         try {
-            return ResponseEntity.ok(unipileApiClient.getHostedAuthLink(null));
+            HostedAuthRequest request = HostedAuthRequest.builder().name(name).build();
+            return ResponseEntity.ok(unipileApiClient.getHostedAuthLink(request));
         } catch (Exception e) {
             log.error("Error generating hosted auth link: {}", e.getMessage());
             return ResponseEntity.status(500).build();
@@ -60,9 +65,12 @@ public class UnipileAuthController {
             @ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content)
     })
     @PostMapping
-    public ResponseEntity<HostedAuthResponse> createAccount() {
+    public ResponseEntity<HostedAuthResponse> createAccount(
+            @Parameter(description = "ID do usuário na tabela auth.users")
+            @RequestParam String name) {
         try {
-            return ResponseEntity.ok(unipileApiClient.getHostedAuthLink(null));
+            HostedAuthRequest request = HostedAuthRequest.builder().name(name).build();
+            return ResponseEntity.ok(unipileApiClient.getHostedAuthLink(request));
         } catch (Exception e) {
             log.error("Error creating account: {}", e.getMessage());
             return ResponseEntity.status(500).build();
@@ -73,8 +81,8 @@ public class UnipileAuthController {
     @PostMapping("/callback")
     public ResponseEntity<Void> handleHostedAuthCallback(@RequestBody HostedAuthNotification notification) {
         log.info("Received Unipile Hosted Auth Callback: {}", notification);
-        if ("CREATION_SUCCESS".equals(notification.getStatus())) {
-            log.info("Successfully linked Unipile account {} for user {}", notification.getAccount_id(), notification.getName());
+        if ("CREATION_SUCCESS".equals(notification.getStatus()) || "RECONNECTED".equals(notification.getStatus())) {
+            log.info("Successfully linked/reconnected Unipile account {} for user {}", notification.getAccount_id(), notification.getName());
             supabaseService.saveAccount(notification, notification.getName());
         } else if ("CREATION_FAILURE".equals(notification.getStatus())) {
             log.warn("Failed to link Unipile account for user {}: {}", notification.getName(), notification.getStatus());
@@ -172,6 +180,27 @@ public class UnipileAuthController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Error syncing accounts: {}", e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @Operation(summary = "Sincroniza conta LinkedIn conectada", description = "Sincroniza uma conta específica do LinkedIn após conexão bem-sucedida")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Conta sincronizada com sucesso"),
+            @ApiResponse(responseCode = "500", description = "Erro interno no servidor", content = @Content)
+    })
+    @PostMapping("/sync/linkedin")
+    public ResponseEntity<Void> syncLinkedInAccount(@RequestBody LinkedInSyncRequest request) {
+        log.info("Syncing LinkedIn account {} for user {}", request.getAccountId(), request.getUserId());
+        try {
+            UnipileAccount account = unipileApiClient.getAccountById(request.getAccountId());
+            if (account != null) {
+                supabaseService.syncSingleAccount(account, request.getUserId());
+                log.info("Synced LinkedIn account {} for user {}", request.getAccountId(), request.getUserId());
+            }
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Error syncing LinkedIn account {}: {}", request.getAccountId(), e.getMessage());
             return ResponseEntity.status(500).build();
         }
     }

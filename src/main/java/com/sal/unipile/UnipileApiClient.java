@@ -315,6 +315,9 @@ public class UnipileApiClient {
         if (!StringUtils.hasText(request.getSuccess_redirect_url())) {
             request.setSuccess_redirect_url(resolveSuccessRedirectUrl());
         }
+        if (!StringUtils.hasText(request.getNotify_url())) {
+            request.setNotify_url(resolveCallbackUrl());
+        }
 
         HttpEntity<HostedAuthRequest> entity = new HttpEntity<>(request, buildHeaders());
         
@@ -418,6 +421,25 @@ public class UnipileApiClient {
             return "http://localhost:3000";
         } else {
             return "https://" + currentHost + ":80";
+        }
+    }
+
+    private String resolveCallbackUrl() {
+        String currentHost = null;
+        try {
+            currentHost = ServletUriComponentsBuilder.fromCurrentContextPath().build().getHost();
+        } catch (Exception e) {
+            log.debug("No active request context found, using configured environment: {}", ambiente);
+        }
+
+        if (!StringUtils.hasText(currentHost)) {
+            currentHost = ambiente;
+        }
+
+        if ("localhost".equalsIgnoreCase(currentHost)) {
+            return "http://localhost:8080/api/v1/unipile/accounts/callback";
+        } else {
+            return "https://" + currentHost + "/api/v1/unipile/accounts/callback";
         }
     }
 
