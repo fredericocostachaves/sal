@@ -73,6 +73,29 @@ public class UnipileApiClient {
         }
     }
 
+    private UriComponentsBuilder buildQueryParams(UriComponentsBuilder builder, String accountId, Integer limit, String cursor, String before, String after) {
+        if (StringUtils.hasText(accountId)) {
+            builder.queryParam("account_id", accountId);
+        }
+        if (limit != null && limit > 0) {
+            builder.queryParam("limit", Math.min(limit, 250));
+        }
+        if (StringUtils.hasText(cursor)) {
+            builder.queryParam("cursor", cursor);
+        }
+        if (StringUtils.hasText(before)) {
+            builder.queryParam("before", before);
+        }
+        if (StringUtils.hasText(after)) {
+            builder.queryParam("after", after);
+        }
+        return builder;
+    }
+
+    private HttpEntity<Void> buildEntity() {
+        return new HttpEntity<>(buildHeaders());
+    }
+
     public UnipileLinkedInSearchResponse searchLinkedIn(UnipileLinkedInSearchRequest request) {
         UnipileLinkedInSearchResponse combinedResponse = null;
         List<com.sal.unipile.dto.UnipileLinkedInSearchResult> allItems = new ArrayList<>();
@@ -229,29 +252,15 @@ public class UnipileApiClient {
             builder.queryParam("limit", Math.min(limit, 250));
         }
 
-        if (StringUtils.hasText(cursor)) {
-            builder.queryParam("cursor", cursor);
-        }
-
         if (unread != null) {
             builder.queryParam("unread", unread);
-        }
-
-        if (StringUtils.hasText(before)) {
-            builder.queryParam("before", before);
-        }
-
-        if (StringUtils.hasText(after)) {
-            builder.queryParam("after", after);
         }
 
         if (StringUtils.hasText(accountType)) {
             builder.queryParam("account_type", accountType);
         }
 
-        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
-
-        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileChatListResponse.class, "List All Chats");
+        return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, buildEntity(), UnipileChatListResponse.class, "List All Chats");
     }
 
     public UnipileChat getChat(String chatId, String accountId) {
@@ -420,7 +429,7 @@ public class UnipileApiClient {
         if ("localhost".equalsIgnoreCase(currentHost)) {
             return "http://localhost:3000";
         } else {
-            return "https://" + currentHost + ":80";
+            return "https://" + currentHost;
         }
     }
 
@@ -700,6 +709,7 @@ public class UnipileApiClient {
         executeRequest(url, HttpMethod.POST, entity, Map.class, "Add Message Reaction");
     }
 
+    @SuppressWarnings("rawtypes")
     public Map getAttachment(String messageId, String attachmentId, String accountId) {
         String url = baseUrl + "/api/v1/messages/" + messageId + "/attachments/" + attachmentId;
 
@@ -890,6 +900,7 @@ public class UnipileApiClient {
         return executeRequest(builder.build().toUri().toString(), HttpMethod.GET, entity, UnipileMessageListResponse.class, "List Messages By Attendee");
     }
 
+    @SuppressWarnings("rawtypes")
     public Map getAttendeeProfilePicture(String attendeeId, String accountId) {
         String url = baseUrl + "/api/v1/chat_attendees/" + attendeeId + "/profile-picture";
 

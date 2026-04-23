@@ -2,6 +2,7 @@ package com.sal.unipile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sal.unipile.dto.HostedAuthNotification;
+import com.sal.unipile.dto.HostedAuthRequest;
 import com.sal.unipile.dto.HostedAuthResponse;
 import com.sal.unipile.dto.UnipileAccount;
 import com.sal.unipile.dto.UnipileAccountResponse;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,6 +35,9 @@ class UnipileAuthControllerTest {
     @MockitoBean
     private SupabaseService supabaseService;
 
+    @MockitoBean
+    private com.sal.unipile.persistence.AccountRepository accountRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -44,9 +49,10 @@ class UnipileAuthControllerTest {
                 .url("https://account.unipile.com/hosted-auth-wizard-mock-123")
                 .build();
 
-        when(unipileApiClient.getHostedAuthLink(null)).thenReturn(response);
+        when(unipileApiClient.getHostedAuthLink(any(HostedAuthRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/unipile/accounts/link")
+                        .param("name", "user-123")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.object").value("HostedAuthURL"))
@@ -61,9 +67,10 @@ class UnipileAuthControllerTest {
                 .url("https://account.unipile.com/hosted-auth-wizard-mock-456")
                 .build();
 
-        when(unipileApiClient.getHostedAuthLink(null)).thenReturn(response);
+        when(unipileApiClient.getHostedAuthLink(any(HostedAuthRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/unipile/accounts")
+                        .param("name", "user-123")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.object").value("HostedAuthURL"))
@@ -113,10 +120,11 @@ class UnipileAuthControllerTest {
     @Test
     @DisplayName("Deve retornar erro interno quando houver falha na API")
     void getHostedAuthLink_ShouldReturnUnipileError() throws Exception {
-        when(unipileApiClient.getHostedAuthLink(null))
+        when(unipileApiClient.getHostedAuthLink(any(HostedAuthRequest.class)))
                 .thenThrow(new RuntimeException("Invalid API Key"));
 
         mockMvc.perform(post("/api/v1/unipile/accounts/link")
+                        .param("name", "user-123")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError());
     }
